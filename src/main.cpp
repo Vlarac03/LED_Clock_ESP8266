@@ -7,15 +7,15 @@
 #include "secrets.h"
 
 // ============================================
-// CONFIGURACIÓ HORÀRIA (ESPANYA)
+// TIMEZONE CONFIGURATION (SPAIN)
 // ============================================
 // CET-1CEST: Central European Time +1, Daylight Saving +2
-// M3.5.0: Canvi a l'estiu l'últim (5) diumenge (0) de març (3)
-// M10.5.0: Canvi a l'hivern l'últim (5) diumenge (0) d'octubre (10)
+// M3.5.0: Switch to summer on last (5) Sunday (0) of March (3)
+// M10.5.0: Switch to winter on last (5) Sunday (0) of October (10)
 #define MY_TZ "CET-1CEST,M3.5.0,M10.5.0/3"
 
 // ============================================
-// DEFINICIONS DE HARDWARE
+// HARDWARE DEFINITIONS
 // ============================================
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
@@ -27,19 +27,19 @@
 #define DHT_PIN 2       // GPIO2 - D4
 #define DHT_TYPE DHT22
 
-// DEFINICIONS BOTONS FÍSICS
+// PHYSICAL BUTTON DEFINITIONS
 #define BOTON_MODE_PIN 0     // GPIO0 - D3
 #define BOTON_POWER_PIN 5    // GPIO5 - D1
 
 // ============================================
-// INSTÀNCIES
+// INSTANCES
 // ============================================
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 DHT dht(DHT_PIN, DHT_TYPE);
 
 // ============================================
-// CONFIGURACIÓ WIFI - DUES XARXES
+// WIFI CONFIGURATION - TWO NETWORKS
 // ============================================
 const char* ssid1     = WIFI_SSID1;
 const char* password1 = WIFI_PASS1;
@@ -47,7 +47,7 @@ const char* ssid2     = WIFI_SSID2;
 const char* password2 = WIFI_PASS2;
 
 // ============================================
-// PROTOTIPS
+// FUNCTION PROTOTYPES
 // ============================================
 void syncTimeNTP();
 void updateTimeVariables();
@@ -66,7 +66,7 @@ void transicioLiniaVertical();
 void ajustarIntensitatNocturna();
 
 // ============================================
-// VARIABLES DE TEMPS
+// TIME VARIABLES
 // ============================================
 uint8_t hours = 0;
 uint8_t minutes = 0;
@@ -80,29 +80,29 @@ unsigned long lastSecond = 0;
 bool dotsOn = true;
 bool timeSynchronized = false;
 bool systemPoweredOn = true;
-bool wifiNeedSync = false; // Flag per sincronitzar a mitjanit
+bool wifiNeedSync = false; // Flag to trigger midnight re-sync
 
 // ============================================
-// VARIABLES DE MODOS
+// DISPLAY MODE VARIABLES
 // ============================================
 uint8_t displayMode = 0;  // 0=BUCLE, 1=HORA
 bool autoCycleModes = true;
 
-// Duracions de cada modo (ms)
+// Duration of each mode (ms)
 const unsigned long MODE_DURATION = 5000;
 
-// Control del cicle automàtic
+// Auto-cycle control
 uint8_t currentCycleMode = 1;
 unsigned long cycleStartTime = 0;
 
 // ============================================
-// VARIABLES SENSORS
+// SENSOR VARIABLES
 // ============================================
 float temperatura = 0.0;
 float humitat = 0.0;
 
 // ============================================
-// VARIABLES DE CONTROL
+// CONTROL VARIABLES
 // ============================================
 uint8_t lastDisplayedMinutes = 255;
 bool lastDotsState = true;
@@ -110,7 +110,7 @@ uint8_t lastDisplayMode = 255;
 bool lastSystemState = true;
 
 // ============================================
-// Variables per debounce
+// DEBOUNCE VARIABLES
 // ============================================
 unsigned long lastDebounceTime1 = 0;
 unsigned long lastDebounceTime2 = 0;
@@ -130,10 +130,10 @@ void setup() {
     Serial.println(" - Prem '1' per canviar mode (BUCLE/HORA)");
     Serial.println(" - Prem '2' per ON/OFF del sistema");
     
-    // Inicialitzar DHT22
+    // Initialize DHT22
     dht.begin();
     
-    // Inicialitzar matriu
+    // Initialize matrix
     matrix.begin();
     mx.begin();
     
@@ -148,22 +148,22 @@ void setup() {
     matrix.setPause(1000);
     matrix.setSpeed(30);
     
-    // Connexió WiFi i sincronització de temps per primer cop
+    // Connect to WiFi and sync time for the first time
     syncTimeNTP();
     
-    // Llegir sensor al inici
+    // Read sensor on startup
     leerSensor();
     
-    // Inicialitzar variables de temps
+    // Initialize time tracking variables
     lastSecond = millis();
     cycleStartTime = millis();
     
-    // Comenzar en modo BUCLE - HORA
+    // Start in CYCLE mode - TIME
     displayMode = 0;
     currentCycleMode = 1;
     autoCycleModes = true;
 
-    // Configurar pins dels botons
+    // Configure button pins
     pinMode(BOTON_MODE_PIN, INPUT_PULLUP);
     pinMode(BOTON_POWER_PIN, INPUT_PULLUP);
     
@@ -171,7 +171,7 @@ void setup() {
 }
 
 // ============================================
-// SINCRONITZACIÓ DE TEMPS NTP I WIFI
+// NTP TIME SYNC
 // ============================================
 void syncTimeNTP() {
     Serial.println("\n--- Sincronitzant hora (NTP) ---");
@@ -181,7 +181,7 @@ void syncTimeNTP() {
     matrix.print("WIFI");
     delay(800);
     
-    // Intentar primera xarxa
+    // Try first network
     WiFi.begin(ssid1, password1);
     
     int attempts = 0;
@@ -199,7 +199,7 @@ void syncTimeNTP() {
         }
     }
     
-    // Si no es connecta, intentar segona xarxa
+    // If not connected, try second network
     if (WiFi.status() != WL_CONNECTED) {
         WiFi.begin(ssid2, password2);
         attempts = 0;
@@ -219,16 +219,16 @@ void syncTimeNTP() {
         }
     }
     
-    // Comprovar resultat final i configurar hora
+    // Check final result and configure time
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("WiFi OK. Obtenint hora...");
         matrix.displayClear();
         matrix.setTextAlignment(PA_CENTER);
         
-        // Configurar la zona horària i servidors NTP
+        // Configure timezone and NTP servers
         configTime(MY_TZ, "pool.ntp.org", "time.google.com");
         
-        // Esperem que arribi la dada vàlida del temps
+        // Wait for valid time data
         time_t now = time(nullptr);
         attempts = 0;
         while (now < 8 * 3600 * 2 && attempts < 10) {
@@ -239,7 +239,7 @@ void syncTimeNTP() {
         
         matrix.print("OK");
         delay(800);
-        updateTimeVariables(); // Forçar una actualització immediata de les variables
+        updateTimeVariables(); // Force immediate update of time variables
     } else {
         Serial.println("Error de WiFi.");
         matrix.displayClear();
@@ -248,14 +248,14 @@ void syncTimeNTP() {
         delay(1200);
     }
     
-    // Desconectar WiFi per estalviar consum
+    // Disconnect WiFi to save power
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
     Serial.println("WiFi apagat.");
 }
 
 // ============================================
-// ACTUALITZAR VARIABLES DE TEMPS
+// UPDATE TIME VARIABLES
 // ============================================
 void updateTimeVariables() {
     time_t now = time(nullptr);
@@ -269,14 +269,14 @@ void updateTimeVariables() {
     dayOfWeek = ptm->tm_wday;
     year = ptm->tm_year + 1900;
     
-    // Si són exactament les 00:00:00 i encara no hem activat el flag, l'activem
+    // If exactly 00:00:00, activate the midnight re-sync flag
     if (hours == 0 && minutes == 0 && seconds == 0) {
         wifiNeedSync = true;
     }
 }
 
 // ============================================
-// LECTURA SENSOR DHT22
+// DHT22 SENSOR READING
 // ============================================
 void leerSensor() {
     float temp = dht.readTemperature();
@@ -296,7 +296,7 @@ void leerSensor() {
 }
 
 // ============================================
-// Funció per llegir botons físics
+// PHYSICAL BUTTON HANDLER
 // ============================================
 void checkPhysicalButtons() {
     static unsigned long lastPress1 = 0;
@@ -305,7 +305,7 @@ void checkPhysicalButtons() {
     int currentState1 = digitalRead(BOTON_MODE_PIN);
     int currentState2 = digitalRead(BOTON_POWER_PIN);
     
-    // Botó Mode - sense debounce complex
+    // Mode button
     if (currentState1 == LOW && (millis() - lastPress1 > 500)) {
         Serial.println("BOTO MODE ACTIVAT!");
         lastPress1 = millis();
@@ -327,7 +327,7 @@ void checkPhysicalButtons() {
         }
     }
     
-    // Botó Power - sense debounce complex  
+    // Power button
     if (currentState2 == LOW && (millis() - lastPress2 > 500)) {
         Serial.println("BOTO POWER ACTIVAT!");
         lastPress2 = millis();
@@ -353,7 +353,7 @@ void checkPhysicalButtons() {
 }
 
 // ============================================
-// ANIMACIÓ ESTRELLES COMPLETA
+// STAR ANIMATION
 // ============================================
 void animacioEstrellesCompleta() {
     byte estrelles[][8] = {
@@ -373,7 +373,7 @@ void animacioEstrellesCompleta() {
 }
 
 // ============================================
-// TRANSICIÓ LÍNIA VERTICAL (DRETA → ESQUERRA)
+// VERTICAL LINE TRANSITION (RIGHT TO LEFT)
 // ============================================
 void transicioLiniaVertical() {
     for(int step = 0; step < 32; step++) {
@@ -397,7 +397,7 @@ void transicioLiniaVertical() {
 }
 
 // ============================================
-// AJUSTAR INTENSITAT NOCTURNA
+// NIGHT BRIGHTNESS ADJUSTMENT
 // ============================================
 void ajustarIntensitatNocturna() {
     if((hours >= 22 || hours < 8)) {
@@ -410,62 +410,62 @@ void ajustarIntensitatNocturna() {
 }
 
 // ============================================
-// LOOP PRINCIPAL
+// MAIN LOOP
 // ============================================
 void loop() {
-    // Lectura de botons per serial
+    // Read serial and physical buttons
     checkSerialButtons();
     checkPhysicalButtons();
     
-    // Si el sistema està apagat
+    // If system is off, do nothing
     if (!systemPoweredOn) {
         delay(100);
         return;
     }
     
-    // Ajustar intensitat segons hora (MODE NIT)
+    // Adjust brightness based on time (NIGHT MODE)
     ajustarIntensitatNocturna();
     
-    // Lectura sensor cada 1 minut
+    // Read sensor every 1 minute
     static unsigned long lastSensorRead = 0;
     if (millis() - lastSensorRead > 60000UL) {
         lastSensorRead = millis();
         leerSensor();
     }
     
-    // Animar display (important per al scroll del dia)
+    // Animate display (required for day-of-week scroll)
     matrix.displayAnimate();
     
     // ============================================
-    // ACTUALITZACIÓ CADA SEGON
+    // UPDATE EVERY SECOND
     // ============================================
     if (millis() - lastSecond >= 1000UL) {
         lastSecond = millis();
         
-        // Actualitzem les variables d'hora internament des de l'ESP
+        // Update time variables from ESP internal clock
         updateTimeVariables();
         
-        // Si és mitjanit (00:00:00), ens connectem al WiFi per sincronitzar
+        // If midnight, re-sync time via WiFi
         if (wifiNeedSync) {
             syncTimeNTP();
-            wifiNeedSync = false; // Reset del flag per no fer-ho diverses vegades
+            wifiNeedSync = false; // Reset flag
         }
         
-        // Parpadeo dels punts
+        // Toggle blinking dots
         dotsOn = !dotsOn;
         
         // ============================================
-        // BUCLE AUTOMÁTICO (MODO 0)
+        // AUTO CYCLE (MODE 0)
         // ============================================
         if (autoCycleModes && displayMode == 0) {
             unsigned long duration = MODE_DURATION;
     
             switch(currentCycleMode) {
-                case 1: duration = 8000; break;  // HORA 
-                case 2: duration = 3000; break;  // DIA 
-                case 3: duration = 3000; break;  // DATA
-                case 4: duration = 3000; break;  // TEMPERATURA
-                case 5: duration = 3000; break;  // HUMITAT
+                case 1: duration = 8000; break;  // TIME
+                case 2: duration = 3000; break;  // DAY
+                case 3: duration = 3000; break;  // DATE
+                case 4: duration = 3000; break;  // TEMPERATURE
+                case 5: duration = 3000; break;  // HUMIDITY
             }
     
             if (millis() - cycleStartTime > duration) {
@@ -480,19 +480,19 @@ void loop() {
             }
         }
         
-        // Actualitzar pantalla si és necessari
+        // Update display if needed
         updateDisplayIfNeeded();
     }
 }
 
 // ============================================
-// LECTURA DE BOTONS PER SERIAL
+// SERIAL BUTTON HANDLER
 // ============================================
 void checkSerialButtons() {
     if (Serial.available() > 0) {
         char command = Serial.read();
         
-        // BOTÓ 1 - CANVI DE MODE (BUCLE/HORA)
+        // BUTTON 1 - TOGGLE MODE (CYCLE/TIME ONLY)
         if (command == '1') {
             if (systemPoweredOn) {
                 transicioLiniaVertical();
@@ -513,7 +513,7 @@ void checkSerialButtons() {
             }
         }
         
-        // BOTÓ 2 - ON/OFF DEL SISTEMA
+        // BUTTON 2 - SYSTEM ON/OFF
         if (command == '2') {
             if (systemPoweredOn) {
                 animacioEstrellesCompleta();
@@ -537,7 +537,7 @@ void checkSerialButtons() {
 }
 
 // ============================================
-// ACTUALITZAR PANTALLA SI NECESSARI
+// UPDATE DISPLAY IF NEEDED
 // ============================================
 void updateDisplayIfNeeded() {
     bool needsUpdate = false;
@@ -562,7 +562,7 @@ void updateDisplayIfNeeded() {
 }
 
 // ============================================
-// ACTUALITZAR PANTALLA
+// UPDATE DISPLAY
 // ============================================
 void updateDisplay() {
     if (!systemPoweredOn) return;
@@ -588,7 +588,7 @@ void updateDisplay() {
 }
 
 // ============================================
-// MOSTRA HORA
+// DISPLAY TIME
 // ============================================
 void displayTime() {
     char timeStr[12];
@@ -598,7 +598,7 @@ void displayTime() {
 }
 
 // ============================================
-// MOSTRA DIA DE LA SETMANA (SCROLL)
+// DISPLAY DAY OF WEEK (SCROLL)
 // ============================================
 void displayDay() {
     const char* days[] = {
@@ -611,7 +611,7 @@ void displayDay() {
 }
 
 // ============================================
-// MOSTRA DATA (ESTÀTICA)
+// DISPLAY DATE (STATIC)
 // ============================================
 void displayDate() {
     char dateStr[12];
@@ -621,7 +621,7 @@ void displayDate() {
 }
 
 // ============================================
-// MOSTRA TEMPERATURA
+// DISPLAY TEMPERATURE
 // ============================================
 void displayTemperatura() {
     char tempStr[12];
@@ -631,7 +631,7 @@ void displayTemperatura() {
 }
 
 // ============================================
-// MOSTRA HUMITAT
+// DISPLAY HUMIDITY
 // ============================================
 void displayHumitat() {
     char humStr[12];
