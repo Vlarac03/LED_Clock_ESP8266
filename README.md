@@ -1,4 +1,4 @@
-# Rellotge_Sensoriat - ESP8266 (Huzzah)
+# LED_Clock - ESP8266 NodeMCU v3 (LoLin)
 A WiFi-synced clock with temperature and humidity display, built for the ESP8266 NodeMCU v3 (LoLin), developed in C++ using the Arduino framework with PlatformIO.
 
 ## Features
